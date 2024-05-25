@@ -40,7 +40,8 @@ def initialize_database(conn,cursor,db_name='codeforces_problems.db'):
             handle TEXT,
             rating_min INTEGER,
             rating_max INTEGER,
-            tags TEXT
+            tags TEXT,
+            time_zone TEXT
         )
     ''')
 
