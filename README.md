@@ -33,7 +33,7 @@ To start using the Codeforces Telegram Bot, follow these steps:
 - `/set_timezone`: Set your local timezone for receiving notifications at a convenient time.
 
 ## Support
-For any questions, issues, or feedback, please contact [support@example.com](mailto:support@example.com).
+For any questions, issues, or feedback, please contact [My Telegram Acc](https://t.me/freakyLuffy).
 
 ## License
 This project is licensed under the [MIT License](LICENSE).
