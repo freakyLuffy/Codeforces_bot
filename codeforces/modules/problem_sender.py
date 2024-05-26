@@ -9,6 +9,25 @@ import asyncio
 import sqlite3
 from codeforces.config import DB_NAME
 
+
+async def ask_users(users_chunk, context: CallbackContext, index: int):
+    print(users_chunk)
+    for users in users_chunk:
+        keyboard = [
+            [InlineKeyboardButton("Yes", callback_data=f'solved_yes_{users[0]}'),
+             InlineKeyboardButton("No", callback_data=f'solved_no_{users[0]}')]
+        ]
+        print(type(users[0]))
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        try:
+            await context.bot.send_message(
+                chat_id=users[0],
+                text="Have you solved today's problem?",
+                reply_markup=reply_markup
+            )
+        except Exception as e:
+            print(f"Failed to send message to user {users[0]}: {e}")
+
 async def send_daily_problem_to_users(users: List[Tuple], context: CallbackContext, chunk_index: int) -> None:
     """Send daily problems to a chunk of users."""
     with sqlite3.connect(DB_NAME, check_same_thread=False) as conn:
@@ -58,16 +77,31 @@ async def send_daily_problem(context: CallbackContext,users_) -> None:
         cursor.execute('SELECT user_id, rating_min, rating_max, tags FROM users')
         users = cursor.fetchall()
 
-    users = [i for i in users if i[0] in users_]
+    users_prob = [i for i in users if i[0] in users_[0]]
+    users_ask=[i for i in users if i[0] in users_[1]]
     # Divide users into chunks for parallel processing
     num_threads = 4
-    chunk_size = len(users) // num_threads + (len(users) % num_threads > 0)
-    if len(users):
-        user_chunks = [users[i:i + chunk_size] for i in range(0, len(users), chunk_size)]
+    chunk_size = len(users_prob) // num_threads + (len(users_prob) % num_threads > 0)
+    if len(users_prob):
+        user_chunks = [users_prob[i:i + chunk_size] for i in range(0, len(users), chunk_size)]
 
         tasks = [
             context.application.create_task(send_daily_problem_to_users(chunk, context, index))
             for index, chunk in enumerate(user_chunks)
+        ]
+        
+        await asyncio.gather(*tasks)
+
+    chunk_size1 = len(users_ask) // num_threads + (len(users_ask) % num_threads > 0)
+
+    if len(users_ask):
+        print("here",users_ask)
+        user_chunks1 = [users_ask[i:i + chunk_size1] for i in range(0, len(users_ask), chunk_size1)]
+        print(user_chunks1)
+
+        tasks = [
+            context.application.create_task(ask_users(chunk, context, index))
+            for index, chunk in enumerate(user_chunks1)
         ]
         
         await asyncio.gather(*tasks)

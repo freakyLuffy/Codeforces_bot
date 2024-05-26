@@ -1,5 +1,7 @@
 import sqlite3
 from codeforces import conn,cursor
+import json
+import aiohttp
 
 TAGS_LIST = [
     "geometry", "graph matchings", "matrices", "dp", "combinatorics", "fft", "games",
@@ -31,7 +33,7 @@ def insert_solved_problems(user_handle, submissions, db_name='codeforces_problem
                                    submission['timeConsumedMillis'],
                                    submission['memoryConsumedBytes']))
     conn.commit()
-    conn.close()
+    # conn.close()
 
 # Function to fetch all accepted problems for a user
 def query_accepted_problems(user_handle, db_name='codeforces_problems.db'):
@@ -39,7 +41,7 @@ def query_accepted_problems(user_handle, db_name='codeforces_problems.db'):
     query = "SELECT * FROM solved_problems WHERE user_handle = ? AND verdict = 'OK'"
     cursor.execute(query, (user_handle,))
     rows = cursor.fetchall()
-    conn.close()
+    # conn.close()
     
     # Convert rows back to dictionary format
     solved_problems = []
@@ -96,7 +98,7 @@ def insert_or_update_user(user_id, username, handle, rating_min, rating_max, tag
     ''', (user_id, username, handle, rating_min, rating_max, tags))
 
     conn.commit()
-    conn.close()
+    # conn.close()
 
 # Function to add a user to the subscribed users list
 def subscribe_user(user_id, db_name='codeforces_problems.db'):
@@ -108,7 +110,7 @@ def subscribe_user(user_id, db_name='codeforces_problems.db'):
     ''', (user_id,))
     
     conn.commit()
-    conn.close()
+    # conn.close()
 
 # Function to remove a user from the subscribed users list
 def unsubscribe_user(user_id, db_name='codeforces_problems.db'):
@@ -119,17 +121,21 @@ def unsubscribe_user(user_id, db_name='codeforces_problems.db'):
     ''', (user_id,))
     
     conn.commit()
-    conn.close()
+    # conn.close()
 
-def query_problems(tags=None, min_rating=None, max_rating=None, db_name='codeforces_problems.db'):
+def query_problems(tags=None, min_rating=None, max_rating=None, db_name='codeforces_problems.db',cursor=cursor):
     
     query = "SELECT * FROM problems WHERE 1=1"
     params = []
 
     if tags:
-        for tag in tags:
-            query += " AND tags LIKE ?"
-            params.append(f'%"{tag}"%')  # Use wildcard search for tags
+        # Split the comma-separated tags string into a list of individual tags
+        tags_list = tags.split(',')
+        tags_query = " OR ".join(["tags LIKE ?"] * len(tags_list))
+        query += f" AND ({tags_query})"
+        # Append each tag to the params list with wildcards for LIKE search
+        for tag in tags_list:
+            params.append(f'%{tag.strip()}%')
     
     if min_rating is not None:
         query += " AND rating >= ?"
@@ -138,10 +144,18 @@ def query_problems(tags=None, min_rating=None, max_rating=None, db_name='codefor
     if max_rating is not None:
         query += " AND rating <= ?"
         params.append(max_rating)
+
+    # print(query)
+    # full_query = query
+    # for param in params:
+    #     full_query = full_query.replace('?', repr(param), 1)
+
+    # # Print the final query and parameters for debugging
+    # print("Executing full query:", full_query)
     
     cursor.execute(query, params)
     rows = cursor.fetchall()
-    conn.close()
+    # conn.close()
     
     # Convert rows back to problem dictionary format
     problems = []
@@ -149,12 +163,12 @@ def query_problems(tags=None, min_rating=None, max_rating=None, db_name='codefor
         problems.append({
             "contestId": row[0],
             "problemsetName": row[1],
-            "problem_index ": row[2],
+            "problem_index": row[2],
             "name": row[3],
             "type": row[4],
             "points": row[5],
             "rating": row[6],
-            "tags": json.loads(row[7])  # Convert JSON string back to list
+            "tags": row[7].split(",")  # Convert JSON string back to list
         })
     
     return problems
@@ -171,7 +185,7 @@ async def fetch_and_store_problems():
             if data['status'] == 'OK':
                 problems = data['result']['problems']
                 for problem in problems:
-                    await cursor.execute('''
+                    cursor.execute('''
                         INSERT OR IGNORE INTO problems 
                         (contestId, problemsetName, problem_index, name, type, points, rating, tags) 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', 
@@ -184,6 +198,19 @@ async def fetch_and_store_problems():
                             problem.get('rating'),
                             ','.join(problem['tags']))
                     )
-                con.commit()
-                con.close()
+                conn.commit()
                 return problems
+
+def get_last_10_solved_problems(user_handle, db_name='codeforces_problems.db'):
+    
+    query = '''
+        SELECT problem_index, contestId, name
+        FROM solved_problems
+        WHERE user_handle = ?
+        ORDER BY id DESC
+        LIMIT 10
+    '''
+    cursor.execute(query, (user_handle,))
+    rows = cursor.fetchall()
+    
+    return rows

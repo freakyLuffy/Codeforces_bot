@@ -1,14 +1,16 @@
 # Define command handlers
 from telegram import ForceReply, Update , InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackContext, ConversationHandler,CallbackQueryHandler
-from codeforces import conn,cursor
+from codeforces import conn,cursor,custom_to_iana
 import sqlite3
 import requests
 import json
 from .codeforces_api import fetch_user_submissions
 from .db_utils import insert_solved_problems,get_last_10_solved_problems
 from .problem_sender import send_daily_problem,send_problem
-from pytz import all_timezones
+import pytz
+from datetime import datetime, timedelta,timezone
+
 
 HANDLE, RATING_MIN, RATING_MAX, TAGS = range(4)
 # Define constants for conversation states
@@ -124,17 +126,46 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Subscribe user to daily problem notifications."""
     user = update.effective_user
     user_id = user.id
-    if "subscribed" not in context.bot_data:
-        context.bot_data["subscribed"]={}
+
+    # Check if the user has registered a handle
+    conn = sqlite3.connect('codeforces_problems.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT handle FROM users WHERE user_id = ?', (user_id,))
+    handle_result = cursor.fetchone()
+
+    if not handle_result:
+        await update.message.reply_text("❌ You need to register a handle first using /set_handle.")
+        conn.close()
+        return
+
+    # Check if the user has set timezone
+    cursor.execute('SELECT time_zone FROM users WHERE user_id = ?', (user_id,))
+    timezone_result = cursor.fetchone()[0]
+
+    if not timezone_result:
+        await update.message.reply_text("❌ You need to set your timezone first using /set_timezone.")
+        conn.close()
+        return
+
+    # Check if the user has set filters
+    cursor.execute('SELECT rating_min, rating_max, tags FROM users WHERE user_id = ?', (user_id,))
+    filter_result = cursor.fetchone()
+    if not any(filter_result):
+        await update.message.reply_text("❌ You need to set your filters first using /set_filters.")
+        conn.close()
+        return
+
+    # Subscribe the user
     try:
         cursor.execute('INSERT INTO subscribed_users (user_id) VALUES (?)', (user_id,))
         conn.commit()
-        await update.message.reply_text("You have subscribed to daily problems!")
-
-        context.bot_data["subscribed"][user.id]=1
-
+        await update.message.reply_text("✅ You have subscribed to daily problems!")
+        context.bot_data["subscribed"][user.id] = 1
     except sqlite3.IntegrityError:
-        await update.message.reply_text("You are already subscribed to daily problems!")
+        await update.message.reply_text("❌ You are already subscribed to daily problems!")
+
+
+
     # finally:
     #     conn.close()
 
@@ -160,7 +191,7 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 async def set_filter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Prompt user to enter their rating range and tags for filtering problems."""
-    await update.message.reply_text("Please enter the minimum rating:")
+    await update.message.reply_text("Please enter the minimum rating: or /cancel")
     return RATING_MIN
 
 async def rating_min_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -169,7 +200,7 @@ async def rating_min_received(update: Update, context: ContextTypes.DEFAULT_TYPE
     rating_min = int(update.message.text)
     context.user_data['rating_min'] = rating_min
     
-    await update.message.reply_text("Please enter the maximum rating:")
+    await update.message.reply_text("Please enter the maximum rating: or /cancel")
     return RATING_MAX
 
 async def rating_max_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -186,7 +217,7 @@ async def rating_max_received(update: Update, context: ContextTypes.DEFAULT_TYPE
     # keyboard.append([InlineKeyboardButton("Done", callback_data="done")])
     # reply_markup = InlineKeyboardMarkup(keyboard)
     
-    await update.message.reply_text("Please select tags:", reply_markup=tags_(context))
+    await update.message.reply_text("Please select tags: or /cancel", reply_markup=tags_(context))
     return TAGS
 
 async def tags_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -288,7 +319,7 @@ async def set_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
         [InlineKeyboardButton("UTC+", callback_data='UTC+'), InlineKeyboardButton("UTC-", callback_data='UTC-')]
     ]
     reply_markup = InlineKeyboardMarkup(buttons)
-    await update.message.reply_text("Is your time zone UTC+ or UTC-?", reply_markup=reply_markup)
+    await update.message.reply_text("Is your time zone UTC+ or UTC-? or /cancel", reply_markup=reply_markup)
     return CHOOSE_UTC_SIGN
 
 # Function to handle the choice of UTC+ or UTC-
@@ -338,9 +369,9 @@ async def show_time_zones(update: Update, context: ContextTypes.DEFAULT_TYPE, pa
     reply_markup = InlineKeyboardMarkup(buttons)
     
     if query:
-        await query.edit_message_text(text="Please select your time zone:", reply_markup=reply_markup)
+        await query.edit_message_text(text="Please select your time zone: or /cancel", reply_markup=reply_markup)
     else:
-        await update.message.reply_text("Please select your time zone:", reply_markup=reply_markup)
+        await update.message.reply_text("Please select your time zone: or /cancel", reply_markup=reply_markup)
 
 
 # Function to handle pagination and time zone selection
@@ -373,3 +404,97 @@ async def choose_utc_offset(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     
 
     
+async def handle_response(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
+    user_id = query.from_user.id
+    data = query.data.split('_')
+    response = data[1]
+
+
+    cursor.execute('SELECT time_zone FROM users WHERE user_id = ?', (user_id,))
+    result = cursor.fetchone()
+    if result:
+        user_time_zone = result[0]
+    else:
+        await query.answer("Could not retrieve your time zone.")
+        return
+
+    iana_time_zone = custom_to_iana.get(user_time_zone)
+    if not iana_time_zone:
+        await query.answer("Unknown time zone.")
+        return
+
+    tz = pytz.timezone(iana_time_zone)  # Correct usage of pytz.timezone
+    local_time = datetime.now(tz)
+
+
+    cursor.execute('''
+        INSERT INTO user_responses (user_id, response,timestamp)
+        VALUES (?, ?, ?)
+    ''', (user_id, response, local_time))
+    conn.commit()
+    await query.answer("Your response has been recorded. Thank you!")
+    await query.message.delete()
+
+async def help_command(update: Update, context: CallbackContext) -> None:
+    """Send a message with information on how to use the bot."""
+    message = (
+        "🤖 Welcome to the Bot! 🚀\n\n"
+        "ℹ️ Here are the available commands:\n"
+        "/start - Start the bot\n"
+        "/help - Get help ℹ️\n"
+        "/info - Get information about your registered handle\n"
+        "/subscribe - Subscribe to receive daily problems\n"
+        "/unsubscribe - Unsubscribe from receiving daily problems\n"
+        "/filter - Set your problem filter\n"
+        "/set_timezone - Set your timezone\n"
+        "\n"
+        "🤔 What does this bot do?\n"
+        "This bot helps you with competitive programming! It sends you a random unsolved problem based on your filter every day. You can also receive monthly reports on your performance. It works for all time zones!\n"
+        "\n"
+        "❓ What is Codeforces?\n"
+        "Codeforces is a competitive programming website that hosts contests and problems for programmers of all skill levels.\n"
+        "\n"
+        "🌟 Explore the world of competitive programming with our bot! 🌟"
+    )
+    await update.message.reply_text(message)
+
+
+async def info(update: Update, context: CallbackContext) -> None:
+    """Provide information about the user's registered handle, filters, and subscription status."""
+    user_id = update.message.from_user.id
+
+    # Check if the user has registered a handle
+    conn = sqlite3.connect('codeforces_problems.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT handle FROM users WHERE user_id = ?', (user_id,))
+    handle_result = cursor.fetchone()
+
+    if not handle_result:
+        await update.message.reply_text("❌ You haven't registered a handle yet! Use /add_hanle to register.")
+        conn.close()
+        return
+
+    handle = handle_result[0]
+
+    # Fetch filter details
+    cursor.execute('SELECT rating_min, rating_max, tags,time_zone FROM users WHERE user_id = ?', (user_id,))
+    filter_result = cursor.fetchone()
+    min_rating, max_rating, tags ,timezone= filter_result if filter_result else (None, None, None)
+
+    # Check if the user is subscribed
+    cursor.execute('SELECT COUNT(*) FROM subscribed_users WHERE user_id = ?', (user_id,))
+    subscribed = cursor.fetchone()[0] > 0
+
+    conn.close()
+
+    # Construct the message
+    message = f"👤 Registered Handle: {handle}\n\n"
+    message += "Filters:\n"
+    message += f"  • Max Rating: {max_rating}\n" if max_rating else ""
+    message += f"  • Min Rating: {min_rating}\n" if min_rating else ""
+    message += f"  • Tags: {tags}\n" if tags else ""
+    message += f"  • Timezone: {timezone}\n" if timezone else ""
+    message += f"\nSubscribed: {'Yes' if subscribed else 'No'}"
+
+    await update.message.reply_text(message)
