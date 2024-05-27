@@ -25,12 +25,17 @@ utc_minus_time_zones.sort()
 # Pagination size
 PAGE_SIZE = 8
 TAGS_LIST = [
-    "geometry", "graph matchings", "matrices", "dp", "combinatorics", "fft", "games",
-    "string suffix structures", "ternary search", "hashing", "data structures",
-    "binary search", "brute force", "greedy", "implementation", "divide and conquer",
-    "dfs and similar", "chinese remainder theorem", "2-sat", "shortest paths", "sortings"
+    "2-sat", "binary search", "bitmasks", "brute force",
+    "chinese remainder theorem", "combinatorics",
+    "constructive algorithms", "data structures", "dfs and similar",
+    "divide and conquer", "dp", "dsu", "expression parsing",
+    "fft", "flows", "games", "geometry", "graph matchings",
+    "graphs", "greedy", "hashing", "implementation",
+    "interactive", "math", "matrices", "meet-in-the-middle",
+    "number theory", "probabilities", "schedules",
+    "shortest paths", "sortings", "string suffix structures",
+    "strings", "ternary search", "trees", "two pointers"
 ]
-
 async def log(context:CallbackContext):
     pass
 def tags_(context:CallbackContext):
