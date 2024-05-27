@@ -33,10 +33,9 @@ jobs:
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
-        env:
+        with:
           ssh-private-key: ${{ secrets.AWS_SSH_KEY }}
 
       - name: Deploy code to EC2 instance
         run: |
-          echo "$ssh-private-key" > kh.pem && chmod 600 kh.pem
-          ssh -i kh.pem ubuntu@ec2-13-51-249-37.eu-north-1.compute.amazonaws.com 'cd /usr/src/Python-3.9.0/Codeforces_bot && git pull && sudo systemctl restart codeforces_bot'
+          ssh -o StrictHostKeyChecking=no ubuntu@ec2-13-51-249-37.eu-north-1.compute.amazonaws.com 'cd /usr/src/Python-3.9.0/Codeforces_bot && git pull && sudo systemctl restart codeforces_bot'
