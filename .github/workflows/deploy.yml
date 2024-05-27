@@ -38,4 +38,4 @@ jobs:
 
       - name: Deploy code to EC2 instance
         run: |
-          ssh -i kh.pem ubuntu@ec2-13-51-249-37.eu-north-1.compute.amazonaws.com 'cd /usr/src/Python-3.9.0/Codeforces_bot && git pull && sudo systemctl restart codeforces_bot'
+          ssh ubuntu@ec2-13-51-249-37.eu-north-1.compute.amazonaws.com 'cd /usr/src/Python-3.9.0/Codeforces_bot && git pull && sudo systemctl restart codeforces_bot'
