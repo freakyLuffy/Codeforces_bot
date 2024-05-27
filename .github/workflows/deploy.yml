@@ -1,0 +1,31 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install python3.9-venv
+          python3.9 -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy code to EC2 instance
+        run: |
+          ssh -i kh.pem ubuntu@ec2-13-51-249-37.eu-north-1.compute.amazonaws.com 'cd /usr/src/Python-3.9.0/Codeforces_bot && git pull && sudo systemctl restart codeforces_bot'
