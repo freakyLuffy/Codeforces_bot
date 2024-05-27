@@ -5,7 +5,7 @@ from codeforces.modules.db_utils import fetch_and_store_problems
 from codeforces.config import LOG_CHANNEL
 from codeforces.modules.codeforces_api import fetch_user_submissions
 
-async def update_problems(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def prob(update: Update, context: ContextTypes.DEFAULT_TYPE):
     problems = await fetch_and_store_problems()
     context.bot_data['problems'] = problems
     log_message = f"Total problems fetched: {len(problems)}."
