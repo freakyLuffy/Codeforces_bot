@@ -89,7 +89,7 @@ async def post_init(application: Application) -> None:
         BotCommand("subscribe", "Subscribe to daily problem notifications"),
         BotCommand("unsubscribe", "Unsubscribe from daily problem notifications"),
         BotCommand("set_handle", "Add your Codeforces handle"),
-        BotCommand("filter", "Set rating range and problem tags"),
+        BotCommand("set_filter", "Set rating range and problem tags"),
         BotCommand("set_timezone", "Set your local timezone"),
         BotCommand("info", "Get information about your subscription and filters")
     ]
@@ -98,6 +98,7 @@ async def post_init(application: Application) -> None:
 
 def main() -> None:
     """Start the bot."""
+    print(BOT_TOKEN)
 
     my_persistence = PicklePersistence(filepath='my_file')
 
@@ -114,7 +115,7 @@ def main() -> None:
 
     # Handlers for the conversation to set filters
     filter_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler('filter', set_filter)],
+    entry_points=[CommandHandler('set_filter', set_filter)],
     states={
         RATING_MIN: [MessageHandler(filters.TEXT & ~filters.COMMAND, rating_min_received)],
         RATING_MAX: [MessageHandler(filters.TEXT & ~filters.COMMAND, rating_max_received)],
@@ -130,6 +131,8 @@ def main() -> None:
     },
     fallbacks=[CommandHandler('cancel', cancel)],
     )
+
+
 
 
     # on different commands - answer in Telegram

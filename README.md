@@ -28,8 +28,7 @@ To start using the Codeforces Telegram Bot, follow these steps:
 - `/subscribe`: Subscribe to daily problem notifications.
 - `/unsubscribe`: Unsubscribe from daily problem notifications.
 - `/set_handle`: Add your Codeforces handle to access additional features and statistics.
-- `/last_10_solved`: Get your last 10 solved problems.
-- `/filter`: Set rating range and problem tags for filtering problems.
+- `/set_filter`: Set rating range and problem tags for filtering problems.
 - `/set_timezone`: Set your local timezone for receiving notifications at a convenient time.
 
 ## Support

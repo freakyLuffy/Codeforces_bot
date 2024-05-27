@@ -65,7 +65,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         context.bot_data["users"][user.id]={}
     
     await update.message.reply_html(
-        rf"Hi {user.mention_html()}! Welcome to the Codeforces Problem Bot. Use /add_handle to add your Codeforces handle, /subscribe to subscribe to daily problems, and /filter to set your problem preferences.",
+        rf"Hi {user.mention_html()}! Welcome to the Codeforces Daily Bot. Use /set_handle to add your Codeforces handle, /subscribe to subscribe to daily problems, and /set_filter to set your problem preferences.",
     )
 
 async def add_handle(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -151,7 +151,7 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     cursor.execute('SELECT rating_min, rating_max, tags FROM users WHERE user_id = ?', (user_id,))
     filter_result = cursor.fetchone()
     if not any(filter_result):
-        await update.message.reply_text("❌ You need to set your filters first using /set_filters.")
+        await update.message.reply_text("❌ You need to set your filters first using /set_filter.")
         conn.close()
         return
 
@@ -446,8 +446,9 @@ async def help_command(update: Update, context: CallbackContext) -> None:
         "/info - Get information about your registered handle\n"
         "/subscribe - Subscribe to receive daily problems\n"
         "/unsubscribe - Unsubscribe from receiving daily problems\n"
-        "/filter - Set your problem filter\n"
+        "/set_filter - Set your problem filter\n"
         "/set_timezone - Set your timezone\n"
+        "/set_handle - Add your codeforces handle\n"
         "\n"
         "🤔 What does this bot do?\n"
         "This bot helps you with competitive programming! It sends you a random unsolved problem based on your filter every day. You can also receive monthly reports on your performance. It works for all time zones!\n"
