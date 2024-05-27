@@ -13,13 +13,23 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Add deadsnakes PPA
+        run: sudo add-apt-repository ppa:deadsnakes/ppa -y
+
+      - name: Update package list
+        run: sudo apt-get update
+
+      - name: Install python3.9-venv
+        run: sudo apt-get install python3.9-venv -y
+
+      - name: Create virtual environment
+        run: python3.9 -m venv venv
+
+      - name: Activate virtual environment
+        run: source venv/bin/activate
+
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install python3.9-venv
-          python3.9 -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
