@@ -8,14 +8,18 @@ from typing import List, Dict, Tuple
 import asyncio
 import sqlite3
 from codeforces.config import DB_NAME
+from datetime import datetime
+import pytz
 
 
 async def ask_users(users_chunk, context: CallbackContext, index: int):
     print(users_chunk)
     for users in users_chunk:
+        sent_time = datetime.now(pytz.UTC).isoformat() 
+        
         keyboard = [
-            [InlineKeyboardButton("Yes", callback_data=f'solved_yes_{users[0]}'),
-             InlineKeyboardButton("No", callback_data=f'solved_no_{users[0]}')]
+            [InlineKeyboardButton("Yes", callback_data=f'solved_yes_{users[0]}_{sent_time}'),
+             InlineKeyboardButton("No", callback_data=f'solved_no_{users[0]}_{sent_time}')]
         ]
         print(type(users[0]))
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -33,6 +37,7 @@ async def send_daily_problem_to_users(users: List[Tuple], context: CallbackConte
     with sqlite3.connect(DB_NAME, check_same_thread=False) as conn:
         cursor = conn.cursor()
         cursor.execute("PRAGMA journal_mode=WAL")
+        print(users)
         
         for user in users:
             user_id, rating_min, rating_max, tags = user
@@ -54,7 +59,7 @@ async def send_daily_problem_to_users(users: List[Tuple], context: CallbackConte
                 while retries > 0:
                     try:
                         cursor.execute('INSERT INTO user_problems (user_id, problem_id, status) VALUES (?, ?, ?)', 
-                                       (user_id, f"{random_problem['contestId']}{random_problem['problem_index']}", 'given'))
+                                (user_id, f"{random_problem['contestId']}{random_problem['problem_index']}", 'given'))
                         conn.commit()
                         break
                     except sqlite3.OperationalError as e:

@@ -36,6 +36,7 @@ TAGS_LIST = [
     "shortest paths", "sortings", "string suffix structures",
     "strings", "ternary search", "trees", "two pointers"
 ]
+
 async def log(context:CallbackContext):
     pass
 def tags_(context:CallbackContext):
@@ -165,6 +166,8 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         cursor.execute('INSERT INTO subscribed_users (user_id) VALUES (?)', (user_id,))
         conn.commit()
         await update.message.reply_text("✅ You have subscribed to daily problems!")
+        if "subscribed" not in context.bot_data:
+            context.bot_data["subscribed"]={}
         context.bot_data["subscribed"][user.id] = 1
     except sqlite3.IntegrityError:
         await update.message.reply_text("❌ You are already subscribed to daily problems!")
@@ -414,8 +417,7 @@ async def handle_response(update: Update, context: CallbackContext) -> None:
     user_id = query.from_user.id
     data = query.data.split('_')
     response = data[1]
-
-
+    times=data[3]
     cursor.execute('SELECT time_zone FROM users WHERE user_id = ?', (user_id,))
     result = cursor.fetchone()
     if result:
@@ -428,15 +430,16 @@ async def handle_response(update: Update, context: CallbackContext) -> None:
     if not iana_time_zone:
         await query.answer("Unknown time zone.")
         return
-
-    tz = pytz.timezone(iana_time_zone)  # Correct usage of pytz.timezone
-    local_time = datetime.now(tz)
+    
+    tz = pytz.timezone(iana_time_zone)
+    sent_time_utc = datetime.fromisoformat(times)
+    sent_time_user_tz = sent_time_utc.astimezone(tz)
 
 
     cursor.execute('''
         INSERT INTO user_responses (user_id, response,timestamp)
         VALUES (?, ?, ?)
-    ''', (user_id, response, local_time))
+    ''', (user_id, response, sent_time_user_tz))
     conn.commit()
     await query.answer("Your response has been recorded. Thank you!")
     await query.message.delete()
@@ -504,3 +507,5 @@ async def info(update: Update, context: CallbackContext) -> None:
     message += f"\nSubscribed: {'Yes' if subscribed else 'No'}"
 
     await update.message.reply_text(message)
+
+
