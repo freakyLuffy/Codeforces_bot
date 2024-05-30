@@ -181,6 +181,8 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     """Unsubscribe user from daily problem notifications."""
     user = update.effective_user
     user_id = user.id
+    conn = sqlite3.connect('codeforces_problems.db')
+    cursor = conn.cursor()
 
     if user_id not in context.bot_data["subscribed"]:
             await update.message.reply_text("You need to subscribe to unsubscribe:)")
@@ -192,7 +194,7 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
     conn.commit()
 
     del context.bot_data["subscribed"][user_id]
-    # conn.close()
+    conn.close()
     
     await update.message.reply_text("You have unsubscribed from daily problems.")
     return ConversationHandler.END
