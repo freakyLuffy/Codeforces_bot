@@ -7,21 +7,22 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict, Tuple
 import asyncio
 import sqlite3
-from codeforces.config import DB_NAME
+from codeforces.config import DB_NAME,LOG_CHANNEL
 from datetime import datetime
 import pytz
 
 
 async def ask_users(users_chunk, context: CallbackContext, index: int):
-    print(users_chunk)
     for users in users_chunk:
-        sent_time = datetime.now(pytz.UTC).isoformat() 
+        sent_time = datetime.now(pytz.UTC).isoformat()
+
+        if users[0] not in context.bot_data.get("subscribed", []):
+                continue
         
         keyboard = [
             [InlineKeyboardButton("Yes", callback_data=f'solved_yes_{users[0]}_{sent_time}'),
              InlineKeyboardButton("No", callback_data=f'solved_no_{users[0]}_{sent_time}')]
         ]
-        print(type(users[0]))
         reply_markup = InlineKeyboardMarkup(keyboard)
         try:
             await context.bot.send_message(
@@ -29,6 +30,7 @@ async def ask_users(users_chunk, context: CallbackContext, index: int):
                 text="Have you solved today's problem?",
                 reply_markup=reply_markup
             )
+            context.bot_data["ask_users"].append((users[0],users[4],users[5]))
         except Exception as e:
             print(f"Failed to send message to user {users[0]}: {e}")
 
@@ -37,12 +39,12 @@ async def send_daily_problem_to_users(users: List[Tuple], context: CallbackConte
     with sqlite3.connect(DB_NAME, check_same_thread=False) as conn:
         cursor = conn.cursor()
         cursor.execute("PRAGMA journal_mode=WAL")
-        print(users)
         
         for user in users:
-            user_id, rating_min, rating_max, tags = user
+            user_id, rating_min, rating_max, tags,username,handle = user
             if user_id not in context.bot_data.get("subscribed", []):
                 continue
+
 
             filtered_problems = query_problems(tags=tags, min_rating=rating_min, max_rating=rating_max,cursor=cursor)
             user_handle = context.bot_data["users"][user_id]["handle"]
@@ -71,7 +73,7 @@ async def send_daily_problem_to_users(users: List[Tuple], context: CallbackConte
 
                 problem_url = f"https://codeforces.com/contest/{random_problem['contestId']}/problem/{random_problem['problem_index']}"
                 await context.bot.send_message(chat_id=user_id, text=f"Today's problem: {random_problem['name']}\n{problem_url}")
-
+                context.bot_data["send_users"].append((user_id,username,handle))
                 # Introduce a delay to avoid hitting Telegram's rate limit
                 await asyncio.sleep(0.1)  # Adjust the sleep duration as needed
 
@@ -79,12 +81,12 @@ async def send_daily_problem(context: CallbackContext,users_) -> None:
     """Send a daily problem to each subscribed user based on their filters."""
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
-        cursor.execute('SELECT user_id, rating_min, rating_max, tags FROM users')
+        cursor.execute('SELECT user_id, rating_min, rating_max, tags,username,handle FROM users')
         users = cursor.fetchall()
 
     users_prob = [i for i in users if i[0] in users_[0]]
     users_ask=[i for i in users if i[0] in users_[1]]
-    # Divide users into chunks for parallel processing
+    context.bot_data["send_users"]=[]
     num_threads = 4
     chunk_size = len(users_prob) // num_threads + (len(users_prob) % num_threads > 0)
     if len(users_prob):
@@ -97,12 +99,14 @@ async def send_daily_problem(context: CallbackContext,users_) -> None:
         
         await asyncio.gather(*tasks)
 
+
+
+    context.bot_data["ask_users"]=[]
+
     chunk_size1 = len(users_ask) // num_threads + (len(users_ask) % num_threads > 0)
 
     if len(users_ask):
-        print("here",users_ask)
         user_chunks1 = [users_ask[i:i + chunk_size1] for i in range(0, len(users_ask), chunk_size1)]
-        print(user_chunks1)
 
         tasks = [
             context.application.create_task(ask_users(chunk, context, index))
@@ -110,6 +114,22 @@ async def send_daily_problem(context: CallbackContext,users_) -> None:
         ]
         
         await asyncio.gather(*tasks)
+
+
+    if len(users_prob): 
+        send_users = context.bot_data["send_users"]
+        msg = f"Problems sent to {len(send_users)} users:\n"
+        msg += "\n".join([f"{user[0]} ({user[1]}) - {user[2]}" for user in send_users])
+        await context.bot.send_message(chat_id=LOG_CHANNEL, text=msg)
+
+    if len(users_ask): 
+        ask_users1 = context.bot_data["ask_users"]
+        msg = f"Questions asked to {len(ask_users1)} users:\n"
+        msg += "\n".join([f"{user[0]} ({user[1]}) - {user[2]}" for user in ask_users1])
+        await context.bot.send_message(chat_id=LOG_CHANNEL, text=msg)
+
+        
+
 
 async def send_problem(context: CallbackContext) -> None:
     """Send a daily problem to each subscribed user based on their filters."""
