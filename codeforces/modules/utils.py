@@ -59,8 +59,10 @@ def tags_(context:CallbackContext):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued and welcome the user."""
     user = update.effective_user
-    cursor.execute('INSERT OR IGNORE INTO users (user_id, username) VALUES (?, ?)', (user.id, user.username))
-    conn.commit()
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute('INSERT OR IGNORE INTO users (user_id, username) VALUES (?, ?)', (user.id, user.username))
+        conn.commit()
     # conn.close()
 
     if "users" in context.bot_data:
@@ -84,7 +86,8 @@ async def handle_received(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     """Store the user's Codeforces handle and fetch their submissions."""
     user = update.effective_user
     handle = update.message.text
-
+    conn=sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
     if 'handle' not in context.bot_data:
         context.bot_data["handle"]={}
 
@@ -122,6 +125,8 @@ async def handle_received(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
     context.bot_data["handle"][handle]=1
+
+    conn.close()
         
 
     return ConversationHandler.END
@@ -172,10 +177,8 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     except sqlite3.IntegrityError:
         await update.message.reply_text("❌ You are already subscribed to daily problems!")
 
-
-
-    # finally:
-    #     conn.close()
+    finally:
+        conn.close()
 
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Unsubscribe user from daily problem notifications."""
@@ -244,7 +247,7 @@ async def tags_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
         cursor.execute('UPDATE users SET rating_min = ?, rating_max = ?, tags = ? WHERE user_id = ?',
                        (context.user_data['rating_min'], context.user_data['rating_max'], ','.join(context.user_data.get('tags', [])), user.id))
         conn.commit()
-        # conn.close()
+        conn.close()
         
         await query.edit_message_text("Your filter preferences have been updated!")
         return ConversationHandler.END
@@ -289,6 +292,8 @@ async def send_last_10_solved_problems(update: Update, context: ContextTypes.DEF
 
 async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Assuming 'cursor' is a global or previously defined database cursor
+    conn=sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
     cursor.execute('SELECT * FROM problems LIMIT 5')
     probs = cursor.fetchall()
 
@@ -317,6 +322,9 @@ async def trigger(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
     else:
         message = "No problems found."
+
+
+    conn.close()
 
     # Send the formatted message back to the user
     await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
@@ -420,6 +428,7 @@ async def handle_response(update: Update, context: CallbackContext) -> None:
     data = query.data.split('_')
     response = data[1]
     times=data[3]
+    conn=sqlite3.connect(DB_NAME)
     cursor.execute('SELECT time_zone FROM users WHERE user_id = ?', (user_id,))
     result = cursor.fetchone()
     if result:
@@ -443,6 +452,7 @@ async def handle_response(update: Update, context: CallbackContext) -> None:
         VALUES (?, ?, ?)
     ''', (user_id, response, sent_time_user_tz))
     conn.commit()
+    conn.close()
     await query.answer("Your response has been recorded. Thank you!")
     await query.message.delete()
 
