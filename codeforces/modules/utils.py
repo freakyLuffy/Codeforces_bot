@@ -10,6 +10,7 @@ from .db_utils import insert_solved_problems,get_last_10_solved_problems
 from .problem_sender import send_daily_problem,send_problem
 import pytz
 from datetime import datetime, timedelta,timezone
+from codeforces.config import DB_NAME
 
 
 HANDLE, RATING_MIN, RATING_MAX, TAGS = range(4)
