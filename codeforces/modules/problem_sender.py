@@ -139,10 +139,10 @@ async def send_problem(context: CallbackContext) -> None:
 
 
 
-async def send_daily_problem(context: CallbackContext) -> None:
-    """Send a daily problem to each subscribed user based on their filters."""
-    conn=sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute('SELECT * from problems limit 10')
-    probs = cursor.fetchall()
+# async def send_daily_problem(context: CallbackContext) -> None:
+#     """Send a daily problem to each subscribed user based on their filters."""
+#     conn=sqlite3.connect(DB_NAME)
+#     cursor = conn.cursor()
+#     cursor.execute('SELECT * from problems limit 10')
+#     probs = cursor.fetchall()
     
