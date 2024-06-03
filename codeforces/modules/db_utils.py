@@ -213,16 +213,18 @@ async def fetch_and_store_problems():
             else:
                 conn.close()
 
-# def get_last_10_solved_problems(user_handle, db_name='codeforces_problems.db'):
+def get_last_10_solved_problems(user_handle, db_name='codeforces_problems.db'):
+    conn=sqlite3.connect(db_name)
+    cursor = conn.cursor()
+    query = '''
+        SELECT problem_index, contestId, name
+        FROM solved_problems
+        WHERE user_handle = ?
+        ORDER BY id DESC
+        LIMIT 10
+    '''
+    cursor.execute(query, (user_handle,))
+    rows = cursor.fetchall()
+    conn.close()
     
-#     query = '''
-#         SELECT problem_index, contestId, name
-#         FROM solved_problems
-#         WHERE user_handle = ?
-#         ORDER BY id DESC
-#         LIMIT 10
-#     '''
-#     cursor.execute(query, (user_handle,))
-# #     rows = cursor.fetchall()
-    
-#     return rows
+    return rows
