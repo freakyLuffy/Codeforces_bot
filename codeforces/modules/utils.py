@@ -211,28 +211,33 @@ async def set_filter(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def rating_min_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Store the minimum rating and prompt for the maximum rating."""
     user = update.effective_user
-    rating_min = int(update.message.text)
+    try:
+        rating_min = int(update.message.text)
+        if rating_min < 800 or rating_min > 3500 or rating_min % 100 != 0:
+            raise ValueError("Invalid rating")
+    except ValueError:
+        await update.message.reply_text("Please enter a valid integer between 800 and 3500 in multiples of 100: or /cancel")
+        return RATING_MIN
+
     context.user_data['rating_min'] = rating_min
-    
     await update.message.reply_text("Please enter the maximum rating: or /cancel")
     return RATING_MAX
 
 async def rating_max_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Store the maximum rating and prompt for tags."""
-    rating_max = int(update.message.text)
+    rating_min = context.user_data.get('rating_min', 0)
+    try:
+        rating_max = int(update.message.text)
+        if rating_max < 800 or rating_max > 3500 or rating_max % 100 != 0 or rating_max < rating_min:
+            raise ValueError("Invalid rating")
+    except ValueError:
+        await update.message.reply_text("Please enter a valid integer between 800 and 3500 in multiples of 100, and greater than or equal to the minimum rating: or /cancel")
+        return RATING_MAX
+
     context.user_data['rating_max'] = rating_max
-    
-    # # Create a keyboard for tag selection
-    # keyboard = [
-    #     [InlineKeyboardButton(tag, callback_data=tag) for tag in TAGS_LIST[i:i+2]]
-    #     for i in range(0, len(TAGS_LIST), 2)
-    # ]
-    # # Add a "Done" button
-    # keyboard.append([InlineKeyboardButton("Done", callback_data="done")])
-    # reply_markup = InlineKeyboardMarkup(keyboard)
-    
     await update.message.reply_text("Please select tags: or /cancel", reply_markup=tags_(context))
     return TAGS
+
 
 async def tags_received(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Store the tags and update the user's filter preferences in the database."""
