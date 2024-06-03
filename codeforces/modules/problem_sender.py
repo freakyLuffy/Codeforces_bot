@@ -1,4 +1,3 @@
-from codeforces import conn,cursor
 from telegram import ForceReply, Update , InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackContext, ConversationHandler,CallbackQueryHandler
 from codeforces.modules.db_utils import query_problems
@@ -131,11 +130,11 @@ async def send_daily_problem(context: CallbackContext,users_) -> None:
         
 
 
-async def send_problem(context: CallbackContext) -> None:
-    """Send a daily problem to each subscribed user based on their filters."""
+# async def send_problem(context: CallbackContext) -> None:
+#     """Send a daily problem to each subscribed user based on their filters."""
     
-    cursor.execute('SELECT * from problems limit 10')
-    probs = cursor.fetchall()
+#     cursor.execute('SELECT * from problems limit 10')
+#     probs = cursor.fetchall()
 
 
 

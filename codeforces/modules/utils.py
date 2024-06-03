@@ -1,7 +1,7 @@
 # Define command handlers
 from telegram import ForceReply, Update , InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackContext, ConversationHandler,CallbackQueryHandler
-from codeforces import conn,cursor,custom_to_iana
+from codeforces import custom_to_iana
 import sqlite3
 import requests
 import json

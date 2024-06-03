@@ -1,4 +1,3 @@
-from codeforces import conn,cursor
 from telegram import ForceReply, Update , InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackContext, ConversationHandler,CallbackQueryHandler
 from codeforces.modules.db_utils import fetch_and_store_problems
