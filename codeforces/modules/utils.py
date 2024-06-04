@@ -588,7 +588,7 @@ async def send_message_to_user(update: Update, context: ContextTypes.DEFAULT_TYP
 async def debug_(update: Update, context: CallbackContext) -> None:
     """Provide information about the user's registered handle, filters, and subscription status."""
     admin_id = 948725608  # Replace with your Telegram user ID or other admin IDs
-
+    user = update.effective_user
     if user.id != admin_id:
         await update.message.reply_text("You do not have permission to use this command.")
         return
