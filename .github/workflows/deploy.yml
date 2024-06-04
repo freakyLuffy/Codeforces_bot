@@ -29,7 +29,9 @@ jobs:
         run: source venv/bin/activate
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install python-telegram-bot[rate-limiter]
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
