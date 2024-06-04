@@ -1,7 +1,6 @@
-python-telegram-bot
 aiohttp
-python-telegram-bot[job-queue]
+python-telegram-bot[job-queue,rate-limiter]
 requests
 matplotlib
 python-dotenv
-python-telegram-bot[rate-limiter]
+pytz

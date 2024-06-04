@@ -149,10 +149,9 @@ async def post_init(application: Application) -> None:
     # Add fetched users to the bot_data["subscribed"] list
     application.bot_data["subscribed"].update(subscribed_users)
     key=6876396031
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute('DELETE FROM users WHERE user_id = %s', (key,))
-    conn.close()
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM users WHERE user_id = ?', (key,))
     
 
 
