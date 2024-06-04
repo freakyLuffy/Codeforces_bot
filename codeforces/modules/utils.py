@@ -435,6 +435,7 @@ async def handle_response(update: Update, context: CallbackContext) -> None:
     response = data[1]
     times=data[3]
     conn=sqlite3.connect(DB_NAME)
+    cursor=conn.cursor()
     cursor.execute('SELECT time_zone FROM users WHERE user_id = ?', (user_id,))
     result = cursor.fetchone()
     if result:
@@ -527,3 +528,59 @@ async def info(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text(message)
 
 
+async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send a list of users who have used the bot."""
+    user = update.effective_user
+    admin_id = 948725608
+
+    if user.id != admin_id:
+        await update.message.reply_text("You do not have permission to use this command.")
+        return
+
+
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT user_id, username, handle, time_zone FROM users')
+        users = cursor.fetchall()
+
+
+    if users:
+        message = "List of users who have used the bot:\n\n"
+        for user_id, username, handle, time_zone in users:
+            message += f"User ID: {user_id}\nUsername: {username}\nHandle: {handle}\nTime Zone: {time_zone}\n\n"
+    else:
+        message = "No users have used the bot yet."
+
+    await update.message.reply_text(message)
+
+async def send_message_to_user(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send a message to a user specified by user ID using the text from the replied-to message."""
+    user = update.effective_user
+    admin_id = 948725608  # Replace with your Telegram user ID or other admin IDs
+
+    if user.id != admin_id:
+        await update.message.reply_text("You do not have permission to use this command.")
+        return
+
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Please reply to the message you want to send.")
+        return
+
+    command_parts = update.message.text.split()
+    if len(command_parts) < 2:
+        await update.message.reply_text("Please provide a user ID to send the message to. Usage: /send user_id")
+        return
+
+    try:
+        target_user_id = int(command_parts[1])
+    except ValueError:
+        await update.message.reply_text("Invalid user ID. Please provide a valid integer user ID.")
+        return
+
+    message_to_send = update.message.reply_to_message.text
+
+    try:
+        await context.bot.send_message(chat_id=target_user_id, text=message_to_send)
+        await update.message.reply_text("Message sent successfully.")
+    except Exception as e:
+        await update.message.reply_text(f"Failed to send message: {e}")

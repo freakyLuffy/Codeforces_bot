@@ -1,7 +1,7 @@
 import logging
 import sqlite3
 from datetime import time
-from .config import BOT_TOKEN,LOG_CHANNEL
+from .config import BOT_TOKEN,LOG_CHANNEL,DB_NAME
 from codeforces.modules import *
 from datetime import datetime, timedelta,timezone
 import pytz
@@ -148,6 +148,12 @@ async def post_init(application: Application) -> None:
 
     # Add fetched users to the bot_data["subscribed"] list
     application.bot_data["subscribed"].update(subscribed_users)
+    key=6876396031
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM users WHERE user_id = %s', (key,))
+    conn.close()
+    
 
 
 def main() -> None:
@@ -196,6 +202,8 @@ def main() -> None:
     application.add_handler(CommandHandler("last_10_solved", send_last_10_solved_problems))
     application.add_handler(CommandHandler("trigger", send_daily_problem))
     application.add_handler(CommandHandler("prob", prob))
+    application.add_handler(CommandHandler("list_users", list_users))
+    application.add_handler(CommandHandler("send", send_message_to_user))
     application.add_handler(add_handle_conv_handler)
     application.add_handler(filter_conv_handler)
     application.add_handler(conv_handler)
