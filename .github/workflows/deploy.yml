@@ -33,6 +33,9 @@ jobs:
           pip install -r requirements.txt
           pip install python-telegram-bot[rate-limiter]
 
+      - name: List installed Python packages
+        run: pip list
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
         with:
