@@ -6,7 +6,7 @@ from codeforces.modules import *
 from datetime import datetime, timedelta,timezone
 import pytz
 from telegram import  Update , InlineKeyboardButton, InlineKeyboardMarkup,BotCommand
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackContext, ConversationHandler,CallbackQueryHandler,   PicklePersistence
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters, CallbackContext, ConversationHandler,CallbackQueryHandler,   PicklePersistence,AIORateLimiter
 from codeforces import custom_to_iana
 import html
 import json
@@ -162,7 +162,8 @@ def main() -> None:
 
     my_persistence = PicklePersistence(filepath='my_file')
 
-    application = Application.builder().token(BOT_TOKEN).persistence(persistence=my_persistence).post_init(post_init).build()
+    #application = Application.builder().token(BOT_TOKEN).persistence(persistence=my_persistence).post_init(post_init).build()
+    application = Application.builder().rate_limiter(AIORateLimiter()).token(BOT_TOKEN).persistence(persistence=my_persistence).post_init(post_init).build()
 
 
     add_handle_conv_handler = ConversationHandler(

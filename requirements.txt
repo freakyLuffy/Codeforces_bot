@@ -4,3 +4,4 @@ python-telegram-bot[job-queue]
 requests
 matplotlib
 python-dotenv
+python-telegram-bot[rate-limiter]
