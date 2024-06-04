@@ -71,7 +71,7 @@ async def fetch_users_for_time(utc_time, db_name='codeforces_problems.db'):
         print(local_time)
         
         # Check for midnight range
-        midnight_start = local_time.replace(hour=0, minute=5, second=0, microsecond=0)
+        midnight_start = local_time.replace(hour=0, minute=0, second=0, microsecond=0)
         midnight_end = midnight_start + timedelta(seconds=59)
         
         # Check for noon range
@@ -148,10 +148,6 @@ async def post_init(application: Application) -> None:
 
     # Add fetched users to the bot_data["subscribed"] list
     application.bot_data["subscribed"].update(subscribed_users)
-    key=6876396031
-    with sqlite3.connect(DB_NAME) as conn:
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM users WHERE user_id = ?', (key,))
     
 
 
@@ -204,6 +200,7 @@ def main() -> None:
     application.add_handler(CommandHandler("prob", prob))
     application.add_handler(CommandHandler("list_users", list_users))
     application.add_handler(CommandHandler("send", send_message_to_user))
+    application.add_handler(CommandHandler("debug", debug_))
     application.add_handler(add_handle_conv_handler)
     application.add_handler(filter_conv_handler)
     application.add_handler(conv_handler)

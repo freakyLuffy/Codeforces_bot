@@ -584,3 +584,53 @@ async def send_message_to_user(update: Update, context: ContextTypes.DEFAULT_TYP
         await update.message.reply_text("Message sent successfully.")
     except Exception as e:
         await update.message.reply_text(f"Failed to send message: {e}")
+
+async def debug_(update: Update, context: CallbackContext) -> None:
+    """Provide information about the user's registered handle, filters, and subscription status."""
+    admin_id = 948725608  # Replace with your Telegram user ID or other admin IDs
+
+    if user.id != admin_id:
+        await update.message.reply_text("You do not have permission to use this command.")
+        return
+    original_message = update.message.reply_to_message
+    if original_message:
+        user_id = int(original_message.text)
+    else:
+        update.message.reply_text("You need to reply to a message containing the user id of the user you want to dig in.")
+        return
+
+
+    # Check if the user has registered a handle
+    conn = sqlite3.connect('codeforces_problems.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT handle FROM users WHERE user_id = ?', (user_id,))
+    handle_result = cursor.fetchone()
+
+    if not handle_result:
+        await update.message.reply_text("❌ You haven't registered a handle yet! Use /add_hanle to register.")
+        conn.close()
+        return
+
+    handle = handle_result[0]
+
+    # Fetch filter details
+    cursor.execute('SELECT rating_min, rating_max, tags,time_zone FROM users WHERE user_id = ?', (user_id,))
+    filter_result = cursor.fetchone()
+    min_rating, max_rating, tags ,timezone= filter_result if filter_result else (None, None, None)
+
+    # Check if the user is subscribed
+    cursor.execute('SELECT COUNT(*) FROM subscribed_users WHERE user_id = ?', (user_id,))
+    subscribed = cursor.fetchone()[0] > 0
+
+    conn.close()
+
+    # Construct the message
+    message = f"👤 Registered Handle: {handle}\n\n"
+    message += "Filters:\n"
+    message += f"  • Max Rating: {max_rating}\n" if max_rating else ""
+    message += f"  • Min Rating: {min_rating}\n" if min_rating else ""
+    message += f"  • Tags: {tags}\n" if tags else ""
+    message += f"  • Timezone: {timezone}\n" if timezone else ""
+    message += f"\nSubscribed: {'Yes' if subscribed else 'No'}"
+
+    await update.message.reply_text(message)
