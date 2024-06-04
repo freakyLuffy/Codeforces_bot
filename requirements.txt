@@ -1,5 +1,5 @@
 aiohttp
-python-telegram-bot[job-queue,rate-limiter]
+python-telegram-bot[rate-limiter]
 requests
 matplotlib
 python-dotenv
