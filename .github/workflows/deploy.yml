@@ -22,19 +22,21 @@ jobs:
       - name: Install python3.9-venv
         run: sudo apt-get install python3.9-venv -y
 
-      - name: Create virtual environment
-        run: python3.9 -m venv venv
-
-      - name: Activate virtual environment
-        run: source venv/bin/activate
-
-      - name: Install dependencies
+      - name: Set up virtual environment
         run: |
-          pip install -r requirements.txt
-          pip install python-telegram-bot[rate-limiter]
+          if [ ! -d "venv" ]; then
+            python3.9 -m venv venv
+            source venv/bin/activate
+            pip install -r requirements.txt
+            pip install python-telegram-bot[rate-limiter]
+          else
+            source venv/bin/activate
+          fi
 
       - name: List installed Python packages
-        run: pip list
+        run: |
+          source venv/bin/activate
+          pip list
 
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.5.3
@@ -43,4 +45,16 @@ jobs:
 
       - name: Deploy code to EC2 instance
         run: |
-          ssh -o StrictHostKeyChecking=no ubuntu@ec2-13-51-249-37.eu-north-1.compute.amazonaws.com 'cd /usr/src/Python-3.9.0/Codeforces_bot && git pull && sudo systemctl restart codeforces_bot'
+          ssh -o StrictHostKeyChecking=no ubuntu@ec2-13-51-249-37.eu-north-1.compute.amazonaws.com '
+          if [ ! -d "/usr/src/Python-3.9.0/Codeforces_bot/venv" ]; then
+            cd /usr/src/Python-3.9.0/Codeforces_bot
+            python3.9 -m venv venv
+            source venv/bin/activate
+            pip install -r requirements.txt
+            pip install python-telegram-bot[rate-limiter]
+          else
+            cd /usr/src/Python-3.9.0/Codeforces_bot
+            source venv/bin/activate
+          fi
+          git pull
+          sudo systemctl restart codeforces_bot'
