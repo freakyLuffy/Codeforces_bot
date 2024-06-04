@@ -45,7 +45,7 @@ async def send_daily_problem_to_users(users: List[Tuple], context: CallbackConte
                 continue
 
 
-            filtered_problems = query_problems(tags=tags, min_rating=rating_min, max_rating=rating_max,cursor=cursor)
+            filtered_problems = query_problems(tags=tags, min_rating=rating_min, max_rating=rating_max)
             user_handle = context.bot_data["users"][user_id]["handle"]
 
             cursor.execute('SELECT contestId, problem_index FROM solved_problems WHERE user_handle = ?', (user_handle,))
