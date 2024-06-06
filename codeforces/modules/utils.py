@@ -634,3 +634,33 @@ async def debug_(update: Update, context: CallbackContext) -> None:
     message += f"\nSubscribed: {'Yes' if subscribed else 'No'}"
 
     await update.message.reply_text(message)
+
+
+async def run_query(update: Update, context: CallbackContext) -> None:
+    admin_id = 948725608
+    user = update.effective_user
+    if user.id != admin_id:
+        await update.message.reply_text("You do not have permission to use this command.")
+        return
+
+    if not update.message.reply_to_message:
+        await update.message.reply_text("Please reply to a message containing the SQL query.")
+        return
+
+    query = update.message.reply_to_message.text
+
+    try:
+        with sqlite3.connect(DB_NAME) as conn:
+            cursor = conn.cursor()
+            cursor.execute(query)
+            result = cursor.fetchall()
+            conn.commit()
+
+        if result:
+            # Formatting the result into a string
+            result_str = "\n".join(map(str, result))
+            await update.message.reply_text(f"Query executed successfully:\n{result_str}")
+        else:
+            await update.message.reply_text("Query executed successfully but returned no results.")
+    except sqlite3.Error as e:
+        await update.message.reply_text(f"An error occurred: {e}")

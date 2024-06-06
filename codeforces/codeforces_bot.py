@@ -145,9 +145,6 @@ async def post_init(application: Application) -> None:
     # Ensure the "subscribed" key exists in bot_data
     if "subscribed" not in application.bot_data:
         application.bot_data["subscribed"] = {}
-
-    # Add fetched users to the bot_data["subscribed"] list
-    application.bot_data["subscribed"].update(subscribed_users)
     
 
 
@@ -201,6 +198,7 @@ def main() -> None:
     application.add_handler(CommandHandler("list_users", list_users))
     application.add_handler(CommandHandler("send", send_message_to_user))
     application.add_handler(CommandHandler("debug", debug_))
+    application.add_handler(CommandHandler("sql", run_query))
     application.add_handler(add_handle_conv_handler)
     application.add_handler(filter_conv_handler)
     application.add_handler(conv_handler)
