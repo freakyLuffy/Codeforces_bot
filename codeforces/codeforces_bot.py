@@ -71,7 +71,7 @@ async def fetch_users_for_time(utc_time, db_name='codeforces_problems.db'):
         print(local_time)
         
         # Check for midnight range
-        midnight_start = local_time.replace(hour=16, minute=20, second=0, microsecond=0)
+        midnight_start = local_time.replace(hour=4, minute=10, second=0, microsecond=0)
         midnight_end = midnight_start + timedelta(seconds=59)
         
         # Check for noon range
