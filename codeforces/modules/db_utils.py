@@ -130,8 +130,7 @@ def unsubscribe_user(user_id, db_name='codeforces_problems.db'):
     conn.commit()
     conn.close()
 
-def query_problems(tags=None, min_rating=None, max_rating=None, db_name='codeforces_problems.db'):
-    conn=sqlite3.connect(db_name)
+def query_problems(tags=None, min_rating=None, max_rating=None, db_name='codeforces_problems.db',conn=None):
     cursor = conn.cursor()
     query = "SELECT * FROM problems WHERE 1=1"
     params = []
@@ -163,7 +162,7 @@ def query_problems(tags=None, min_rating=None, max_rating=None, db_name='codefor
     
     cursor.execute(query, params)
     rows = cursor.fetchall()
-    conn.close()
+    # conn.close()
     
     # Convert rows back to problem dictionary format
     problems = []

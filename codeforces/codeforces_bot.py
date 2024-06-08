@@ -71,11 +71,11 @@ async def fetch_users_for_time(utc_time, db_name='codeforces_problems.db'):
         print(local_time)
         
         # Check for midnight range
-        midnight_start = local_time.replace(hour=1, minute=35, second=0, microsecond=0)
+        midnight_start = local_time.replace(hour=16, minute=20, second=0, microsecond=0)
         midnight_end = midnight_start + timedelta(seconds=59)
         
         # Check for noon range
-        noon_start = local_time.replace(hour=1, minute=30, second=0, microsecond=0)
+        noon_start = local_time.replace(hour=23, minute=50, second=0, microsecond=0)
         noon_end = noon_start + timedelta(minutes=1)
 
         print(noon_start,noon_end)
@@ -197,7 +197,7 @@ def main() -> None:
     application.add_handler(CommandHandler("unsubscribe", unsubscribe))
     application.add_handler(CommandHandler("last_10_solved", send_last_10_solved_problems))
     application.add_handler(CommandHandler("trigger", send_daily_problem))
-    application.add_handler(CommandHandler("prob", prob))
+    # application.add_handler(CommandHandler("prob", prob))
     application.add_handler(CommandHandler("list_users", list_users))
     application.add_handler(CommandHandler("send", send_message_to_user))
     application.add_handler(CommandHandler("debug", debug_))
