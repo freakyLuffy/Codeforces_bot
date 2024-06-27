@@ -9,7 +9,7 @@ import sqlite3
 from codeforces.config import DB_NAME,LOG_CHANNEL
 from datetime import datetime
 import pytz
-
+from telegram.error import Forbidden, NetworkError
 
 async def ask_users(users_chunk, context: CallbackContext, index: int):
     for users in users_chunk:
@@ -70,6 +70,14 @@ async def send_daily_problem_to_users(users: List[Tuple], context: CallbackConte
                             raise
 
                 problem_url = f"https://codeforces.com/contest/{random_problem['contestId']}/problem/{random_problem['problem_index']}"
+                try:
+                    await context.bot.send_message(chat_id=user_id, text=f"Today's problem: {random_problem['name']}\n{problem_url}")
+                    context.bot_data["send_users"].append((user_id, username, handle))
+                except Forbidden:
+                    print(f"Failed to send message to user {user_id} (possibly blocked the bot).")
+                except Exception as e:
+                    print(f"An unexpected error occurred while sending a message to {user_id}: {e}")
+
                 await context.bot.send_message(chat_id=user_id, text=f"Today's problem: {random_problem['name']}\n{problem_url}")
                 context.bot_data["send_users"].append((user_id,username,handle))
                 # Introduce a delay to avoid hitting Telegram's rate limit
