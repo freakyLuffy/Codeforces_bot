@@ -78,8 +78,8 @@ async def send_daily_problem_to_users(users: List[Tuple], context: CallbackConte
                 except Exception as e:
                     print(f"An unexpected error occurred while sending a message to {user_id}: {e}")
 
-                await context.bot.send_message(chat_id=user_id, text=f"Today's problem: {random_problem['name']}\n{problem_url}")
-                context.bot_data["send_users"].append((user_id,username,handle))
+                #await context.bot.send_message(chat_id=user_id, text=f"Today's problem: {random_problem['name']}\n{problem_url}")
+                #context.bot_data["send_users"].append((user_id,username,handle))
                 # Introduce a delay to avoid hitting Telegram's rate limit
                 await asyncio.sleep(0.1)  # Adjust the sleep duration as needed
 
