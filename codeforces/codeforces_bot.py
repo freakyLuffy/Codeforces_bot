@@ -13,6 +13,8 @@ import json
 import logging
 import traceback
 from telegram.constants import ParseMode
+from telegram.error import BadRequest
+
 # Enable logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
